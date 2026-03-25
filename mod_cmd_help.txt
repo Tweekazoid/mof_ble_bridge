@@ -1,0 +1,232 @@
+Automnatic UV Unwrapper tool. Copyright Quel Solaar / Ministry of Flat 3.7.0
+-----------------------------------------------------------
+
+Usage:
+        C:\Users\WDAGUtilityAccount\Desktop\UnWrapConsole3.exe <input path> <output path> <Options>
+
+Options:
+
+        Silent:
+                usage: -SILENT TRUE/FALSE
+                Do not output any text to console.
+                default value: FALSE
+
+        Texture resolution:
+                usage: -resolution <VALUE>
+                Resolution of texture, to give right amount of island gaps to prevent bleeds.
+                default value: 1024
+
+        Separate hard edges:
+                usage: -separate TRUE/FALSE
+                Guarantees that all hard edges are separated. Useful for lightmapping and Normalmapping
+                default value: FALSE
+
+        Aspect:
+                usage: -aspect <VALUE>
+                Aspect ratio of pixels. For non square textures.
+                default value: 1.000000
+
+        Use normal:
+                usage: -normals TRUE/FALSE
+                Use the models normals to help classify polygons.
+                default value: FALSE
+
+        UDIMs:
+                usage: -udims <VALUE>
+                Split the model in to multople UDIMs
+                default value: 1
+
+        Overlap Identical parts:
+                usage: -overlap TRUE/FALSE
+                Overlap identtical parts to take up the same texture space.
+                default value: FALSE
+
+        Overlap mirrored parts:
+                usage: -mirror TRUE/FALSE
+                Overlap mirrored parts to take up the same texture space.
+                default value: FALSE
+
+        Scale UV space to worldspace:
+                usage: -worldscale TRUE/FALSE
+                Scales the UVs to match their real world scale going beyound the zero to one range.
+                default value: FALSE
+
+        Texture Density:
+                usage: -density <VALUE>
+                If worldspace is enabled, this value sets the number of pixels per unit.
+                default value: 1024
+
+        Seam direction:
+                usage: -center <X VALUE> <Y VALUE> <Z VALUE>
+                Sets a pointy in space that seams are directed towards. By default the center of the model.
+                default value: 0.000000 0.000000 0.000000
+
+        Supress validation errors:
+                usage: -supress TRUE/FALSE
+                Faulty geometry errors will not be printed to standard out.
+                default value: FALSE
+
+        Quads:
+                usage: -quad TRUE/FALSE
+                Searches the model for triangle pairs that make good quads. Improves the use of patches.
+                default value: TRUE
+
+        Vertex Weld:
+                usage: -weld TRUE/FALSE
+                Merges duplicate vertices, Does not efect the out put polygon or vertext data.
+                default value: TRUE
+
+        Flat Soft surface:
+                usage: -flat TRUE/FALSE
+                Detects flat areas of soft surfaces in order to minimize their distortion.
+                default value: TRUE
+
+        Cones:
+                usage: -cone TRUE/FALSE
+                Searches the model for sharp Cones.
+                default value: TRUE
+
+        Cone Ratio:
+                usage: -coneratio <VALUE>
+                The minimum ratio of a triangle used in a cone.
+                default value: 0.500000
+
+        Grids:
+                usage: -grids TRUE/FALSE
+                Searches the model for grids of quads.
+                default value: TRUE
+
+        Strips:
+                usage: -strip TRUE/FALSE
+                Searches the model for strips of quads.
+                default value: TRUE
+
+        Patches:
+                usage: -patch TRUE/FALSE
+                Searches the model for grids of quads.
+                default value: TRUE
+
+        Planes:
+                usage: -planes TRUE/FALSE
+                Detect planes.
+                default value: TRUE
+
+        Flatness:
+                usage: -flatt <VALUE>
+                Minimum normal dot product between two flat polygons.
+                default value: 0.900000
+
+        Merge:
+                usage: -merge TRUE/FALSE
+                Merges polygons using unfolding
+                default value: TRUE
+
+        Merge limit:
+                usage: -mergelimit <VALUE>
+                Limit the angle of polygons beeing merged.
+                default value: 0.000000
+
+        Pre-Smooth:
+                usage: -presmooth TRUE/FALSE
+                Soften the mesh before atempting to cut and project.
+                default value: TRUE
+
+        Soft unfold:
+                usage: -softunfold TRUE/FALSE
+                Atempt to unfold soft surfaces.
+                default value: TRUE
+
+        Tubes:
+                usage: -tubes TRUE/FALSE
+                Find tube shaped geometry and unwrap it using cylindrical projection.
+                default value: TRUE
+
+        Junctions:
+                usage: -junctionsdebug TRUE/FALSE
+                Find and handle Junctions between tubes.
+                default value: TRUE
+
+        Extra ordenary point:
+                usage: -extradebug TRUE/FALSE
+                Using vertices not sharded by 4 quads as starting points for cutting.
+                default value: FALSE
+
+        Angle based flatening:
+                usage: -abf TRUE/FALSE
+                Using angle based flattening to handle smooth surfaces.
+                default value: TRUE
+
+        Smooth:
+                usage: -smooth TRUE/FALSE
+                Cut and project smooth surfaces.
+                default value: TRUE
+
+        Repair Smooth:
+                usage: -repairsmooth TRUE/FALSE
+                Attaches small islands to larger islands on smooth surfaces.
+                default value: TRUE
+
+        Repair:
+                usage: -repair TRUE/FALSE
+                Repair edges to make then straight.
+                default value: TRUE
+
+        Squares:
+                usage: -square TRUE/FALSE
+                Finds various individual polygons that hare right angles.
+                default value: TRUE
+
+        Relax:
+                usage: -relax TRUE/FALSE
+                Relax all smooth polygons to minimize distortion.
+                default value: TRUE
+
+        Relaxation iterations:
+                usage: -relax_iteration <VALUE>
+                The number of iteration loops when relaxing.
+                default value: 50
+
+        Expand:
+                usage: -expand <VALUE>
+                Expand soft surfaces to make more use of texture space. Experimental, off by default
+                default value: 0.250000
+
+        Cut:
+                usage: -cutdebug TRUE/FALSE
+                Cut down awkward shapes in order to optimize layout coverage.
+                default value: TRUE
+
+        Stretch:
+                usage: -stretch TRUE/FALSE
+                Stretch any island that is too wide to fit in the image.
+                default value: TRUE
+
+        Match:
+                usage: -match TRUE/FALSE
+                Match individual tirangles for better packing.
+                default value: TRUE
+
+        Packing:
+                usage: -packing TRUE/FALSE
+                Pack islands in to a rectangle
+                default value: TRUE
+
+        Rasterization resolution:
+                usage: -rasterization <VALUE>
+                Resolution of packing rasterization.
+                default value: 64
+
+        Packing iterations:
+                usage: -packing_iterati <VALUE>
+                How many times the packer will pack the islands in order to find the optimal island spaceing.
+                default value: 4
+
+        Scale to fit:
+                usage: -scaletofit <VALUE>
+                Scales islands to fit cavites.
+                default value: 0.500000
+
+        Validate:
+                usage: -validate TRUE/FALSE
+                Validate geometry after each stage and print out any issues found (For debugging only).
+                default value: FALSE

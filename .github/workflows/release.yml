@@ -1,0 +1,65 @@
+name: Release on Approval
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "pyproject.toml"
+      - "mof_ble_bridge/__version__"
+      - ".github/workflows/release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  call-tests:
+    name: MoF Bridge CI
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: call-tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    environment: release   # manual approval gate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          VERSION=""
+          if [ -f mof_ble_bridge/__version__ ]; then
+            VERSION=$(tr -d '\r' < mof_ble_bridge/__version__ | xargs)
+          fi
+          if [ -z "$VERSION" ]; then
+            VERSION=$(grep -m 1 -Po '(?<=^current_version\s*=\s*")[^"]+' pyproject.toml || true)
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "Version could not be determined" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create release archive
+        run: |
+          mkdir -p dist
+          zip -r "dist/mof_ble_bridge-${{ steps.version.outputs.version }}.zip" mof_ble_bridge/
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body: |
+            ## Ministry of Flat Bridge v${{ steps.version.outputs.version }}
+
+            Install: in Blender → Edit → Preferences → Add-ons → Install — select the zip.
+
+            **Note:** This release does not include Ministry of Flat binaries.
+            Use the Download button inside Blender, or grab them from [quelsolaar.com](https://www.quelsolaar.com).
+          files: |
+            dist/mof_ble_bridge-${{ steps.version.outputs.version }}.zip

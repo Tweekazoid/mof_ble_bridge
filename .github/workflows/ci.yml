@@ -1,0 +1,42 @@
+name: MoF Bridge CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_call:
+
+jobs:
+  build_test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.9"
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Create venv & sync
+        run: |
+          uv venv
+          uv sync --all-groups --link-mode=copy
+          uv run pip install -e .
+
+      # Lint only once (on 3.9) to save time
+      - name: Ruff
+        if: matrix.python-version == '3.9'
+        run: uv run ruff check
+
+      - name: PyDocLint
+        if: matrix.python-version == '3.9'
+        run: uv run pydoclint .

@@ -1,0 +1,16 @@
+.venv
+__pycache__
+cache/
+temp
+
+.ruff_cache
+.env
+_debug/
+
+*.blend
+*.blend1
+
+release_info.json
+
+
+**/MinistryOfFlat*
