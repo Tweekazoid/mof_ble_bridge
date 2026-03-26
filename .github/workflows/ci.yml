@@ -5,8 +5,12 @@ on:
     types: [opened, synchronize, reopened]
   workflow_call:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build_test:
+    name: Lint & Test
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -32,11 +36,15 @@ jobs:
           uv sync --all-groups --link-mode=copy
           uv run pip install -e .
 
-      # Lint only once (on 3.9) to save time
+      # Lint only once (on 3.11) to save time
       - name: Ruff
-        if: matrix.python-version == '3.9'
+        if: matrix.python-version == '3.11'
         run: uv run ruff check
 
       - name: PyDocLint
-        if: matrix.python-version == '3.9'
+        if: matrix.python-version == '3.11'
         run: uv run pydoclint .
+
+  dry-release:
+    name: Dry Release
+    uses: ./.github/workflows/dry_release.yml

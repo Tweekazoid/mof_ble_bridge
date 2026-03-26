@@ -53,6 +53,8 @@ ignore = [
     "TRY003", #
     "FBT001", # https://docs.astral.sh/ruff/rules/boolean-type-hint-positional-argument/
     "FBT002", # https://docs.astral.sh/ruff/rules/boolean-default-value-positional-argument/
+    "FBT003", # https://docs.astral.sh/ruff/rules/boolean-positional-value-in-call/ — Blender API (select_set etc.)
+    "RUF012", # https://docs.astral.sh/ruff/rules/mutable-class-attributes-default/ — Blender bl_options convention
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -64,41 +66,6 @@ convention = "google"
     "SLF001",  # https://docs.astral.sh/ruff/rules/private-member-access/
     "S101"  # https://docs.astral.sh/ruff/rules/assert/
 ]
-
-[tool.ruff.lint.pep8-naming]
-extend-ignore-names = ["_t*", "t*"]
-
-[tool.bumpversion]
-current_version = "0.0.1"
-parse = """(?x)
-    (?P<major>0|[1-9]\\d*)\\.
-    (?P<minor>0|[1-9]\\d*)\\.
-    (?P<patch>0|[1-9]\\d*)
-    (?:
-        -dev(?P<dev>\\d+)
-    )?
-"""
-serialize = [
-    "{major}.{minor}.{patch}-dev{dev}",
-    "{major}.{minor}.{patch}"
-]
-search = "{current_version}"
-replace = "{new_version}"
-regex = false
-ignore_missing_version = false
-tag = false
-sign_tags = false
-tag_name = "proxor-v{new_version}"
-tag_message = "Bump version: {current_version} → {new_version}"
-allow_dirty = true
-commit = false
-message = "Bump version: {current_version} → {new_version}"
-commit_args = ""
-
-[tool.bumpversion.part.dev]
-optional_value = ""
-values = "0123456789"
-independent = true
 
 
 [tool.pydoclint]

@@ -1,0 +1,57 @@
+name: Dry Release (Build Check)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  dry-release:
+    name: Dry Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          VERSION=""
+          if [ -f mof_ble_bridge/__version__ ]; then
+            VERSION=$(tr -d '\r' < mof_ble_bridge/__version__ | xargs)
+          fi
+          if [ -z "$VERSION" ]; then
+            VERSION=$(grep -m 1 -Po '(?<=^current_version\s*=\s*")[^"]+' pyproject.toml || true)
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "Version could not be determined" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Dry release version: $VERSION"
+
+      - name: Build release archive
+        run: |
+          mkdir -p dist
+          zip -r "dist/mof_ble_bridge-${{ steps.version.outputs.version }}.zip" mof_ble_bridge/
+          echo "Archive contents:"
+          unzip -l "dist/mof_ble_bridge-${{ steps.version.outputs.version }}.zip"
+
+      - name: Verify archive integrity
+        run: |
+          zip -T "dist/mof_ble_bridge-${{ steps.version.outputs.version }}.zip"
+          echo "Archive size: $(du -sh dist/mof_ble_bridge-${{ steps.version.outputs.version }}.zip | cut -f1)"
+
+      - name: Upload dry release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mof_ble_bridge-${{ steps.version.outputs.version }}-dry
+          path: dist/mof_ble_bridge-${{ steps.version.outputs.version }}.zip
+          retention-days: 7
