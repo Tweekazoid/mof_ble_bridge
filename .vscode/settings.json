@@ -186,6 +186,9 @@
     "github.copilot.chat.agent.currentEditorContext.enabled": true,
     "github.copilot.chat.codeGeneration.useInstructionFiles": true,
     "github.copilot.chat.agent.thinkingTool": true,
-    "iis.configDir": ""
+    "iis.configDir": "",
+    "chat.tools.terminal.autoApprove": {
+        "uv": true
+    }
 
 }

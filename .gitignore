@@ -12,5 +12,6 @@ _debug/
 
 release_info.json
 
+*.egg-info/
 
 **/MinistryOfFlat*

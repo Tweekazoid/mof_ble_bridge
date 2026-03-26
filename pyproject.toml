@@ -31,6 +31,8 @@ exclude = [
     "__pycache__/**",
     ".venv/**",
     "*.pyi",
+    "mof_ble_bridge/mof_ble.py",           # Legacy reference script, superseded by __init__.py
+    "mof_ble_bridge/should_be_working.py",  # Third-party reference code, not part of this addon
 ]
 
 

@@ -43,7 +43,7 @@ except Exception:  # noqa: BLE001
 bl_info = {
     "name": "Ministry of Flat Bridge",
     "author": "Michal Hons (mehpixel.com) | MoF by Eskil Steenberg (quelsolaar.com)",
-    "version": _VERSION,
+    "version": (0, 1, 0),
     "blender": (3, 0, 0),
     "description": (
         "UV unwrap bridge for Ministry of Flat automatic unwrapper "
@@ -135,7 +135,7 @@ def _build_cmd(exe: str, input_path: str, output_path: str, props: MOF_OT_unwrap
     # Debug-only settings (docs: Supress … Validate)
     cmd += ["-SUPRESS", _bool_flag(props.suppress_geo_errors)]
     cmd += ["-QUAD", _bool_flag(props.quad)]
-    cmd += ["-WELD", _bool_flag(props.weld)]
+    cmd += ["-WELD", "FALSE"]  # intentionally off — MoF's weld is internal analysis only
     cmd += ["-FLAT", _bool_flag(props.flat_surface)]
     cmd += ["-CONE", _bool_flag(props.cone)]
     cmd += ["-CONERATIO", f"{props.coneratio:.6f}"]
@@ -385,11 +385,6 @@ class MOF_OT_unwrap(Operator):  # noqa: N801
         description="Search for triangle pairs that form good quads",
         default=True,
     )
-    weld: BoolProperty(  # type: ignore[valid-type]
-        name="Vertex Weld",
-        description="Merge duplicate vertices before processing (does not affect output polygon data)",
-        default=True,
-    )
     flat_surface: BoolProperty(  # type: ignore[valid-type]
         name="Flat Soft Surface",
         description="Detect flat areas of soft surfaces to minimise distortion",
@@ -580,6 +575,13 @@ class MOF_OT_unwrap(Operator):  # noqa: N801
         default=False,
     )
 
+    # -- UI toggle ---------------------------------------------------------- #
+    show_advanced: BoolProperty(  # type: ignore[valid-type]
+        name="Show Advanced / Debug Settings",
+        description="Show geometry analysis, unfolding, post-processing and packing controls",
+        default=False,
+    )
+
     # -- Operator UI -------------------------------------------------------- #
     def invoke(self, context: Context, event) -> set[str]:  # noqa: ARG002
         """Show the settings dialog before running."""
@@ -622,85 +624,91 @@ class MOF_OT_unwrap(Operator):  # noqa: N801
         box.prop(self, "seam_center", text="")
 
         # ------------------------------------------------------------------ #
-        # Everything below is marked debug-only in the MoF documentation:
-        # "Making any change to these settings is likely to result in worse
-        # UV mapping and/or longer processing time."
+        # Advanced / Debug toggle  (docs: changing these likely worsens results)
         # ------------------------------------------------------------------ #
         layout.separator()
-        warn = layout.box()
-        warn.alert = True
-        warn.label(text="Advanced / Debug Settings", icon="ERROR")
-        warn.label(text="Changing these may worsen results or slow processing")
+        adv_header = layout.row()
+        adv_header.prop(
+            self,
+            "show_advanced",
+            icon="TRIA_DOWN" if self.show_advanced else "TRIA_RIGHT",
+            emboss=False,
+        )
 
-        # Geometry Analysis
-        box = layout.box()
-        box.label(text="Geometry Analysis", icon="MESH_DATA")
-        col = box.column(align=True)
-        col.prop(self, "quad")
-        col.prop(self, "weld")
-        col.prop(self, "flat_surface")
-        col.prop(self, "cone")
-        sub = col.column(align=True)
-        sub.enabled = self.cone
-        sub.prop(self, "coneratio")
-        col.prop(self, "grids")
-        col.prop(self, "strip")
-        col.prop(self, "patch")
-        col.prop(self, "planes")
-        col.prop(self, "flatness")
+        if self.show_advanced:
+            warn = layout.box()
+            warn.alert = True
+            warn.label(text="Advanced / Debug Settings", icon="ERROR")
+            warn.label(text="Changing these may worsen results or slow processing")
 
-        # Unfolding
-        box = layout.box()
-        box.label(text="Unfolding", icon="MOD_UVPROJECT")
-        col = box.column(align=True)
-        col.prop(self, "merge")
-        sub = col.column(align=True)
-        sub.enabled = self.merge
-        sub.prop(self, "mergelimit")
-        col.prop(self, "presmooth")
-        col.prop(self, "softunfold")
-        col.prop(self, "tubes")
-        sub = col.column(align=True)
-        sub.enabled = self.tubes
-        sub.prop(self, "junctions")
-        col.prop(self, "extra_debug")
-        col.prop(self, "abf")
-        col.prop(self, "smooth_cut")
-        col.prop(self, "repairsmooth")
+            # Geometry Analysis
+            box = layout.box()
+            box.label(text="Geometry Analysis", icon="MESH_DATA")
+            col = box.column(align=True)
+            col.prop(self, "quad")
+            col.prop(self, "flat_surface")
+            col.prop(self, "cone")
+            sub = col.column(align=True)
+            sub.enabled = self.cone
+            sub.prop(self, "coneratio")
+            col.prop(self, "grids")
+            col.prop(self, "strip")
+            col.prop(self, "patch")
+            col.prop(self, "planes")
+            col.prop(self, "flatness")
 
-        # Post-Processing
-        box = layout.box()
-        box.label(text="Post-Processing", icon="MODIFIER")
-        col = box.column(align=True)
-        col.prop(self, "repair")
-        col.prop(self, "square")
-        col.prop(self, "relax")
-        sub = col.column(align=True)
-        sub.enabled = self.relax
-        sub.prop(self, "relax_iteration")
-        col.prop(self, "expand")
-        col.prop(self, "cut_debug")
-        col.prop(self, "stretch")
-        col.prop(self, "match")
+            # Unfolding
+            box = layout.box()
+            box.label(text="Unfolding", icon="MOD_UVPROJECT")
+            col = box.column(align=True)
+            col.prop(self, "merge")
+            sub = col.column(align=True)
+            sub.enabled = self.merge
+            sub.prop(self, "mergelimit")
+            col.prop(self, "presmooth")
+            col.prop(self, "softunfold")
+            col.prop(self, "tubes")
+            sub = col.column(align=True)
+            sub.enabled = self.tubes
+            sub.prop(self, "junctions")
+            col.prop(self, "extra_debug")
+            col.prop(self, "abf")
+            col.prop(self, "smooth_cut")
+            col.prop(self, "repairsmooth")
 
-        # Packing
-        box = layout.box()
-        box.label(text="Packing", icon="PACKAGE")
-        col = box.column(align=True)
-        col.prop(self, "packing")
-        sub = col.column(align=True)
-        sub.enabled = self.packing
-        sub.prop(self, "rasterization")
-        sub.prop(self, "packing_iteration")
-        sub.prop(self, "scaletofit")
+            # Post-Processing
+            box = layout.box()
+            box.label(text="Post-Processing", icon="MODIFIER")
+            col = box.column(align=True)
+            col.prop(self, "repair")
+            col.prop(self, "square")
+            col.prop(self, "relax")
+            sub = col.column(align=True)
+            sub.enabled = self.relax
+            sub.prop(self, "relax_iteration")
+            col.prop(self, "expand")
+            col.prop(self, "cut_debug")
+            col.prop(self, "stretch")
+            col.prop(self, "match")
 
-        # Misc / Silent
-        box = layout.box()
-        box.label(text="Output", icon="TOOL_SETTINGS")
-        col = box.column(align=True)
-        col.prop(self, "silent")
-        col.prop(self, "suppress_geo_errors")
-        col.prop(self, "validate")
+            # Packing
+            box = layout.box()
+            box.label(text="Packing", icon="PACKAGE")
+            col = box.column(align=True)
+            col.prop(self, "packing")
+            sub = col.column(align=True)
+            sub.enabled = self.packing
+            sub.prop(self, "rasterization")
+            sub.prop(self, "packing_iteration")
+            sub.prop(self, "scaletofit")
+
+            # Misc / Silent
+            box = layout.box()
+            box.label(text="Output", icon="TOOL_SETTINGS")
+            col = box.column(align=True)
+            col.prop(self, "silent")
+            col.prop(self, "suppress_geo_errors")
+            col.prop(self, "validate")
 
     # -- Execution ---------------------------------------------------------- #
     def execute(self, context: Context) -> set[str]:
@@ -748,14 +756,34 @@ class MOF_OT_unwrap(Operator):  # noqa: N801
         fn_out = os.path.join(tmp, f"{safe_name}_mof_out.obj")
 
         # -- Export this object only --
+        # Use Y-forward / Z-up axes (standard OBJ convention).
+        # Blender 4.x wm.obj_export defaults differ from this, causing MoF
+        # to receive geometry in a coordinate system it cannot read correctly.
+        #
+        # Export via a temporary duplicate whose world matrix is reset to identity
+        # so unapplied scale/rotation on the original does not get baked into
+        # the OBJ vertex positions and distort MoF's UV analysis.
+        import mathutils  # bpy-only module, unavailable outside Blender
+        tmp_obj = obj.copy()
+        tmp_obj.data = obj.data.copy()
+        tmp_obj.matrix_world = mathutils.Matrix.Identity(4)
+        context.collection.objects.link(tmp_obj)
+
         bpy.ops.object.select_all(action="DESELECT")
-        obj.select_set(True)
-        context.view_layer.objects.active = obj
+        tmp_obj.select_set(True)
+        context.view_layer.objects.active = tmp_obj
         bpy.ops.wm.obj_export(
             filepath=fn_in,
             export_selected_objects=True,
             export_materials=False,
+            forward_axis="Y",
+            up_axis="Z",
         )
+        bpy.data.objects.remove(tmp_obj, do_unlink=True)
+
+        # Defensive: ensure the file was fully written before handing it to MoF.
+        if not os.path.isfile(fn_in) or os.path.getsize(fn_in) == 0:
+            raise RuntimeError(f"OBJ export produced no output (or empty file) at: {fn_in}")
 
         # -- Run Ministry of Flat --
         cmd = _build_cmd(exe, fn_in, fn_out, self)
@@ -767,17 +795,16 @@ class MOF_OT_unwrap(Operator):  # noqa: N801
 
         result = subprocess.run(cmd, check=False, **kwargs)
 
-        if result.returncode != 0:
+        # MoF exits with code 1 even on success — rely on output file presence instead.
+        if not os.path.isfile(fn_out) or os.path.getsize(fn_out) == 0:
             raise RuntimeError(
-                f"UnWrapConsole3 exited with code {result.returncode}:\n"
+                f"UnWrapConsole3 exited with code {result.returncode} and produced no output:\n"
                 f"{result.stderr or result.stdout or '(no output)'}",
             )
-        if not os.path.isfile(fn_out):
-            raise RuntimeError("Ministry of Flat produced no output file.")
 
-        # -- Import MoF result --
+        # -- Import MoF result using the same axis convention --
         before = set(bpy.data.objects.keys())
-        bpy.ops.wm.obj_import(filepath=fn_out)
+        bpy.ops.wm.obj_import(filepath=fn_out, forward_axis="Y", up_axis="Z")
         after = set(bpy.data.objects.keys())
         imported_names = after - before
 
@@ -786,22 +813,24 @@ class MOF_OT_unwrap(Operator):  # noqa: N801
 
         imported_obj = bpy.data.objects[next(iter(imported_names))]
 
-        # -- Transfer UVs back to the original by loop index --
+        # -- Transfer UVs using Blender's DataTransfer modifier (TOPOLOGY mapping) --
+        # More robust than raw loop-index copy; handles any vertex-order differences.
         try:
-            _transfer_uvs_by_loop_index(imported_obj, obj)
-            # Delete the temporary imported object
-            bpy.ops.object.select_all(action="DESELECT")
-            imported_obj.select_set(True)
-            context.view_layer.objects.active = imported_obj
-            bpy.ops.object.delete()
-        except ValueError as exc:
-            # Loop count mismatch — leave the imported object for the user
+            _transfer_uvs_data_transfer(context, imported_obj, obj)
+        except Exception as exc:  # noqa: BLE001 — UV transfer errors are unknown/varied
             LOG.warning("UV transfer failed (%s), keeping imported object.", exc)
             self.report(
                 {"WARNING"},
                 f"'{obj.name}': UV transfer failed ({exc}). "
                 "Imported result kept as a separate object.",
             )
+            return
+
+        # Remove the temporary imported object
+        bpy.ops.object.select_all(action="DESELECT")
+        imported_obj.select_set(True)
+        context.view_layer.objects.active = imported_obj
+        bpy.ops.object.delete()
 
         # -- Cleanup temp files --
         for fp in (fn_in, fn_out):
@@ -809,42 +838,81 @@ class MOF_OT_unwrap(Operator):  # noqa: N801
                 os.remove(fp)
 
 
-def _transfer_uvs_by_loop_index(source, target) -> None:
-    """Copy UV loop data from source mesh to target mesh by index.
+def _transfer_uvs_data_transfer(context: Context, source, target) -> None:
+    """Transfer UVs from source (MoF result) to target using DataTransfer modifier.
 
-    Works reliably when Ministry of Flat preserves face/polygon topology
-    (which it does — it only changes UV assignments, not geometry).
+    Uses TOPOLOGY mapping — same face/vertex order is preserved by MoF.
+    This is more robust than raw loop-index copy as it goes through
+    Blender's own UV transfer pipeline.
 
     Args:
-        source: Blender Object containing the MoF-processed UV data.
+        context: Blender context.
+        source: Blender Object with MoF-processed UV data.
         target: Blender Object whose UV map will be updated.
-
-    Raises:
-        ValueError: If face or loop counts differ between the two meshes.
     """
-    src_mesh = source.data
-    tgt_mesh = target.data
-
-    if len(src_mesh.polygons) != len(tgt_mesh.polygons):
-        raise ValueError(
-            f"Face count mismatch: source={len(src_mesh.polygons)}, "
-            f"target={len(tgt_mesh.polygons)}",
-        )
-    if len(src_mesh.loops) != len(tgt_mesh.loops):
-        raise ValueError(
-            f"Loop count mismatch: source={len(src_mesh.loops)}, "
-            f"target={len(tgt_mesh.loops)}",
-        )
-    if not src_mesh.uv_layers:
+    if not source.data.uv_layers:
         raise ValueError("Imported mesh has no UV layers.")
 
-    src_uv = src_mesh.uv_layers.active
-    if not tgt_mesh.uv_layers:
-        tgt_mesh.uv_layers.new(name="UVMap")
-    tgt_uv = tgt_mesh.uv_layers.active
+    # Rename the imported UV layer to match the target's active UV map name
+    tgt_uv_name = target.data.uv_layers.active.name if target.data.uv_layers else "UVMap"
+    source.data.uv_layers[0].name = tgt_uv_name
 
-    for i in range(len(tgt_mesh.loops)):
-        tgt_uv.data[i].uv = src_uv.data[i].uv
+    # Ensure target has a UV layer to receive into
+    if not target.data.uv_layers:
+        target.data.uv_layers.new(name=tgt_uv_name)
+
+    # Apply DataTransfer modifier on the target object
+    bpy.ops.object.select_all(action="DESELECT")
+    target.select_set(True)
+    context.view_layer.objects.active = target
+
+    dt_mod = target.modifiers.new(name="_mof_uv_transfer", type="DATA_TRANSFER")
+    dt_mod.object = source
+    dt_mod.use_loop_data = True
+    dt_mod.data_types_loops = {"UV"}
+    dt_mod.loop_mapping = "TOPOLOGY"
+    dt_mod.layers_uv_select_src = "ALL"
+    dt_mod.layers_uv_select_dst = "NAME"
+
+    bpy.ops.object.modifier_apply(modifier=dt_mod.name)
+
+    # Normalize UVs to [0, 1].
+    # MoF outputs UV coordinates in an internal unit space (typically 0-3+ for a
+    # cube cross layout), not normalized 0-1. Rescale min->0, max->1 uniformly so
+    # the layout fits the UV grid while preserving island proportions.
+    _normalize_uvs(target)
+
+
+def _normalize_uvs(obj, margin: float = 0.002) -> None:
+    """Rescale all UV coords on obj's active UV layer to fit within [margin, 1-margin].
+
+    MoF does not guarantee output in 0-1 UV space; this step corrects that.
+
+    Args:
+        obj: Blender Object whose active UV layer will be normalized.
+        margin: Border gap as a fraction of UV space (default ≈ 2 px at 1024 px).
+    """
+    uv_layer = obj.data.uv_layers.active
+    if not uv_layer:
+        return
+    coords = uv_layer.data
+    if not coords:
+        return
+
+    all_u = [c.uv.x for c in coords]
+    all_v = [c.uv.y for c in coords]
+    min_u, max_u = min(all_u), max(all_u)
+    min_v, max_v = min(all_v), max(all_v)
+    range_u = max_u - min_u
+    range_v = max_v - min_v
+
+    if range_u <= 0 or range_v <= 0:
+        return
+
+    scale = 1.0 - 2.0 * margin
+    for c in coords:
+        c.uv.x = margin + ((c.uv.x - min_u) / range_u) * scale
+        c.uv.y = margin + ((c.uv.y - min_v) / range_v) * scale
 
 
 # ---------------------------------------------------------------------------
