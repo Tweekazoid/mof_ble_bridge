@@ -3,7 +3,7 @@ Name: mof_ble_bridge
 Version: 0.0.0
 Summary: Ministry of Flat Bridge — Blender UV unwrap addon bridging Ministry of Flat by Eskil Steenberg (quelsolaar.com)
 Author-email: Michal Hons <info@mehpixel.com>
-Requires-Python: <3.14,>=3.13
+Requires-Python: <3.12,>=3.11
 Description-Content-Type: text/markdown
 
 # Ministry of Flat Bridge

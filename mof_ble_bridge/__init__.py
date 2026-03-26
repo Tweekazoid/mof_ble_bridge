@@ -6,6 +6,7 @@ Ministry of Flat by Eskil Steenberg (quelsolaar.com).
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import subprocess
@@ -226,20 +227,18 @@ class MOF_OT_download(Operator):  # noqa: N801
                             os.makedirs(dest, exist_ok=True)
                         else:
                             os.makedirs(os.path.dirname(dest), exist_ok=True)
-                            with zf.open(member) as src, open(dest, "wb") as out:  # noqa: PTH123
+                            with zf.open(member) as src, open(dest, "wb") as out:
                                 out.write(src.read())
 
                 _download_state["status"] = "Done! Restart or reload addon."
                 LOG.info("Ministry of Flat installed to %s", target_dir)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:  # broad catch needed — unknown download/extraction errors
                 LOG.exception("Download failed")
                 _download_state["status"] = f"Error: {exc}"
             finally:
                 _download_state["running"] = False
-                try:
+                with contextlib.suppress(OSError):
                     os.remove(zip_path)
-                except OSError:
-                    pass
 
         threading.Thread(target=_run, daemon=True).start()
         self.report({"INFO"}, f"Downloading Ministry of Flat into: {target_dir}")
@@ -249,7 +248,7 @@ class MOF_OT_download(Operator):  # noqa: N801
 # ---------------------------------------------------------------------------
 # Addon Preferences
 # ---------------------------------------------------------------------------
-class MOFBridgePreferences(AddonPreferences):  # noqa: N801
+class MOFBridgePreferences(AddonPreferences):
     """Addon preferences for Ministry of Flat Bridge."""
 
     bl_idname = __name__
@@ -361,7 +360,7 @@ class MOF_OT_unwrap(Operator):  # noqa: N801
     # -- World Scale -------------------------------------------------------- #
     worldscale: BoolProperty(  # type: ignore[valid-type]
         name="World Scale UVs",
-        description="Scale UVs to match real-world scale (beyond 0–1 range)",
+        description="Scale UVs to match real-world scale (beyond 0-1 range)",
         default=False,
     )
     density: FloatProperty(  # type: ignore[valid-type]
@@ -586,7 +585,7 @@ class MOF_OT_unwrap(Operator):  # noqa: N801
         """Show the settings dialog before running."""
         return context.window_manager.invoke_props_dialog(self, width=420)
 
-    def draw(self, context: Context) -> None:  # noqa: ARG002
+    def draw(self, context: Context) -> None:  # noqa: ARG002, PLR0915
         """Draw operator properties grouped by category."""
         layout = self.layout
 
@@ -728,7 +727,7 @@ class MOF_OT_unwrap(Operator):  # noqa: N801
             try:
                 self._process_object(context, obj, exe)
                 processed += 1
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:  # broad catch — unknown per-object errors
                 LOG.exception("Failed to process %s", obj.name)
                 self.report({"WARNING"}, f"Failed on '{obj.name}': {exc}")
                 errors += 1
@@ -762,16 +761,16 @@ class MOF_OT_unwrap(Operator):  # noqa: N801
         cmd = _build_cmd(exe, fn_in, fn_out, self)
         LOG.info("Running MoF: %s", " ".join(cmd))
 
-        kwargs: dict = {"capture_output": True, "text": True, "check": False, "timeout": 600}
+        kwargs: dict = {"capture_output": True, "text": True, "timeout": 600}
         if sys.platform == "win32":
             kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW  # type: ignore[attr-defined]
 
-        result = subprocess.run(cmd, **kwargs)  # noqa: S603
+        result = subprocess.run(cmd, check=False, **kwargs)
 
         if result.returncode != 0:
             raise RuntimeError(
                 f"UnWrapConsole3 exited with code {result.returncode}:\n"
-                f"{result.stderr or result.stdout or '(no output)'}"
+                f"{result.stderr or result.stdout or '(no output)'}",
             )
         if not os.path.isfile(fn_out):
             raise RuntimeError("Ministry of Flat produced no output file.")
@@ -806,10 +805,8 @@ class MOF_OT_unwrap(Operator):  # noqa: N801
 
         # -- Cleanup temp files --
         for fp in (fn_in, fn_out):
-            try:
+            with contextlib.suppress(OSError):
                 os.remove(fp)
-            except OSError:
-                pass
 
 
 def _transfer_uvs_by_loop_index(source, target) -> None:
@@ -831,12 +828,12 @@ def _transfer_uvs_by_loop_index(source, target) -> None:
     if len(src_mesh.polygons) != len(tgt_mesh.polygons):
         raise ValueError(
             f"Face count mismatch: source={len(src_mesh.polygons)}, "
-            f"target={len(tgt_mesh.polygons)}"
+            f"target={len(tgt_mesh.polygons)}",
         )
     if len(src_mesh.loops) != len(tgt_mesh.loops):
         raise ValueError(
             f"Loop count mismatch: source={len(src_mesh.loops)}, "
-            f"target={len(tgt_mesh.loops)}"
+            f"target={len(tgt_mesh.loops)}",
         )
     if not src_mesh.uv_layers:
         raise ValueError("Imported mesh has no UV layers.")
