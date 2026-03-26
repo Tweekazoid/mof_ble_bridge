@@ -838,10 +838,10 @@ class MOF_OT_unwrap(Operator):  # noqa: N801
                 os.remove(fp)
 
 
-def _transfer_uvs_data_transfer(context: Context, source, target) -> None:
+def _transfer_uvs_data_transfer(context: Context, source: object, target: object) -> None:
     """Transfer UVs from source (MoF result) to target using DataTransfer modifier.
 
-    Uses TOPOLOGY mapping — same face/vertex order is preserved by MoF.
+    Uses TOPOLOGY mapping -- same face/vertex order is preserved by MoF.
     This is more robust than raw loop-index copy as it goes through
     Blender's own UV transfer pipeline.
 
@@ -849,6 +849,9 @@ def _transfer_uvs_data_transfer(context: Context, source, target) -> None:
         context: Blender context.
         source: Blender Object with MoF-processed UV data.
         target: Blender Object whose UV map will be updated.
+
+    Raises:
+        ValueError: If the imported mesh has no UV layers.
     """
     if not source.data.uv_layers:
         raise ValueError("Imported mesh has no UV layers.")
@@ -883,7 +886,7 @@ def _transfer_uvs_data_transfer(context: Context, source, target) -> None:
     _normalize_uvs(target)
 
 
-def _normalize_uvs(obj, margin: float = 0.002) -> None:
+def _normalize_uvs(obj: object, margin: float = 0.002) -> None:
     """Rescale all UV coords on obj's active UV layer to fit within [margin, 1-margin].
 
     MoF does not guarantee output in 0-1 UV space; this step corrects that.
